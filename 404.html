@@ -158,29 +158,6 @@
 			opacity:0.05;
 			transform:translateY(10%);
 		}
-		/* sound toggle button */
-		.sound-toggle{
-			position:fixed;
-			right:20px;
-			bottom:20px;
-			z-index:1200;
-			display:inline-flex;
-			align-items:center;
-			justify-content:center;
-			gap:8px;
-			padding:10px 12px;
-			border-radius:12px;
-			background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(255,255,255,0.01));
-			border:1px solid rgba(255,255,255,0.04);
-			color:var(--accent1);
-			box-shadow: 0 6px 20px rgba(2,6,23,0.6);
-			cursor:pointer;
-			backdrop-filter: blur(6px);
-			transition:transform .12s ease, background .12s ease, opacity .12s ease;
-		}
-		.sound-toggle:active{ transform: translateY(1px) }
-		.sound-toggle[aria-pressed="true"]{ background:linear-gradient(90deg,var(--accent1),var(--accent2)); color:#061018; }
-		.sound-toggle svg{ width:18px;height:18px; display:block; }
 		/* responsive tweaks */
 		@media (max-width:720px){
 			.card{padding:28px;gap:16px}
@@ -214,62 +191,30 @@
 					<a class="link" href="#" onclick="report();return false;" title="Report this broken link">Report issue</a>
 				</nav>
 
-				<small class="meta">Not done yet! Come back later for a puzzle! (no, this isn't my code. Yes, I enslaved an ai for this page.)</small>
+				<small class="meta">If this keeps happening, contact support with the URL shown in your browser.</small>
 			</div>
 
 			<div class="grid-strip" aria-hidden="true"></div>
 		</section>
 	</div>
 
-	<!-- sound toggle control -->
-	<button class="sound-toggle" id="soundToggle" aria-pressed="false" aria-label="Toggle background sound" title="Toggle background sound">
-		<!-- speaker / muted icons are toggled in JS by swapping innerHTML -->
-		<svg viewBox="0 0 24 24" fill="none" aria-hidden="true" focusable="false">
-			<path d="M5 9v6h4l5 4V5L9 9H5z" fill="currentColor"/>
-		</svg>
-	</button>
-
 	<script>
-const audio = document.getElementById("bgAudio");
-const btn = document.getElementById("soundToggle");
-const audioFile = "https://files.catbox.moe/mgc3h0.mp3";
-let playing = false;
-let unlocked = false;
-
-function updateButton(){
-	btn.setAttribute("aria-pressed", String(playing));
-	btn.innerHTML = playing
-		? '<svg viewBox="0 0 24 24"><path d="M5 9v6h4l5 4V5L9 9H5z"/><path d="M16 8a4 4 0 010 8" stroke="currentColor" stroke-width="1.5"/></svg>'
-		: '<svg viewBox="0 0 24 24"><path d="M5 9v6h4l5 4V5L9 9H5z"/><path d="M18 6L6 18" stroke="currentColor" stroke-width="1.6"/></svg>';
-}
-
-function enableSound(){
-	if (!unlocked) {
-		audio.volume = 0.45;
-		audio.play();
-		unlocked = true;
-		playing = true;
-		updateButton();
-	}
-}
-
-function toggleSound(){
-	if (!unlocked) return enableSound();
-
-	if (playing) { audio.pause(); }
-	else { audio.play(); }
-	playing = !playing;
-	updateButton();
-}
-
-btn.addEventListener("click", toggleSound);
-
-["pointerdown","keydown","touchstart"].forEach(ev =>
-	window.addEventListener(ev, enableSound, { once: true, passive: true })
-);
-
-updateButton();
-</script>
-
+		// simple report action (replace with real endpoint if available)
+		function report(){
+			const url = encodeURIComponent(location.href);
+			if (confirm('Report this broken link to the site owner?')) {
+				// open mail client with prefilled subject (fallback)
+				location.href = `mailto:hello@example.com?subject=Broken%20link%20404&body=URL:%20${url}`;
+			}
+		}
+		// Improve keyboard focus visibility for mouse users
+		(function(){
+			let usingKeyboard = false;
+			function handleFirstTab(e){
+				if(e.key === 'Tab'){ document.body.classList.add('using-keyboard'); usingKeyboard = true; window.removeEventListener('keydown', handleFirstTab); }
+			}
+			window.addEventListener('keydown', handleFirstTab);
+		})();
+	</script>
 </body>
 </html>
