@@ -214,7 +214,7 @@
 					<a class="link" href="#" onclick="report();return false;" title="Report this broken link">Report issue</a>
 				</nav>
 
-				<small class="meta">Not done yet! Come back later for a puzzle!</small>
+				<small class="meta">Not done yet! Come back later for a puzzle! (no, this isn't my code. Yes, I enslaved an ai for this page.)</small>
 			</div>
 
 			<div class="grid-strip" aria-hidden="true"></div>
@@ -230,174 +230,46 @@
 	</button>
 
 	<script>
-		// simple report action (replace with real endpoint if available)
-		function report(){
-			const url = encodeURIComponent(location.href);
-			if (confirm('Report this broken link to the site owner?')) {
-				// open mail client with prefilled subject (fallback)
-				location.href = `mailto:hello@example.com?subject=Broken%20link%20404&body=URL:%20${url}`;
-			}
-		}
-		// Improve keyboard focus visibility for mouse users
-		(function(){
-			let usingKeyboard = false;
-			function handleFirstTab(e){
-				if(e.key === 'Tab'){ document.body.classList.add('using-keyboard'); usingKeyboard = true; window.removeEventListener('keydown', handleFirstTab); }
-			}
-			window.addEventListener('keydown', handleFirstTab);
-		})();
+const audio = document.getElementById("bgAudio");
+const btn = document.getElementById("soundToggle");
+const audioFile = "https://files.catbox.moe/mgc3h0.mp3";
+let playing = false;
+let unlocked = false;
 
-		// Ambient background via WebAudio + autoplay workaround:
-		(function(){
-			const btn = document.getElementById('soundToggle');
-			const AudioCtx = window.AudioContext || window.webkitAudioContext;
-			let ctx, masterGain, playing = false, unlocked = false;
+function updateButton(){
+	btn.setAttribute("aria-pressed", String(playing));
+	btn.innerHTML = playing
+		? '<svg viewBox="0 0 24 24"><path d="M5 9v6h4l5 4V5L9 9H5z"/><path d="M16 8a4 4 0 010 8" stroke="currentColor" stroke-width="1.5"/></svg>'
+		: '<svg viewBox="0 0 24 24"><path d="M5 9v6h4l5 4V5L9 9H5z"/><path d="M18 6L6 18" stroke="currentColor" stroke-width="1.6"/></svg>';
+}
 
-			function createAudioGraph(){
-				if(ctx) return;
-				ctx = new AudioCtx();
-				// master gain starts at 0 so it is effectively muted (allows "muted autoplay" behavior)
-				masterGain = ctx.createGain();
-				masterGain.gain.value = 0;
-				masterGain.connect(ctx.destination);
+function enableSound(){
+	if (!unlocked) {
+		audio.volume = 0.45;
+		audio.play();
+		unlocked = true;
+		playing = true;
+		updateButton();
+	}
+}
 
-				// create two detuned oscillators for a soft pad
-				const oscA = ctx.createOscillator();
-				oscA.type = 'sine';
-				oscA.frequency.value = 110; // base
+function toggleSound(){
+	if (!unlocked) return enableSound();
 
-				const oscB = ctx.createOscillator();
-				oscB.type = 'sine';
-				oscB.frequency.value = 220; // octave
+	if (playing) { audio.pause(); }
+	else { audio.play(); }
+	playing = !playing;
+	updateButton();
+}
 
-				// slow LFO to add gentle movement to filter freq
-				const lfo = ctx.createOscillator();
-				lfo.type = 'sine';
-				lfo.frequency.value = 0.07; // very slow
+btn.addEventListener("click", toggleSound);
 
-				const lfoGain = ctx.createGain();
-				lfoGain.gain.value = 400;
+["pointerdown","keydown","touchstart"].forEach(ev =>
+	window.addEventListener(ev, enableSound, { once: true, passive: true })
+);
 
-				// filter to make sound warm and not intrusive
-				const filter = ctx.createBiquadFilter();
-				filter.type = 'lowpass';
-				filter.frequency.value = 900;
-				filter.Q.value = 0.7;
+updateButton();
+</script>
 
-				// subtle stereo panner
-				const panner = ctx.createStereoPanner();
-				panner.pan.value = -0.2;
-
-				// connect graph
-				oscA.connect(filter);
-				oscB.connect(filter);
-				filter.connect(panner);
-				panner.connect(masterGain);
-
-				lfo.connect(lfoGain);
-				lfoGain.connect(filter.frequency);
-
-				// gentle amplitude envelope via gain node per oscillator (optional)
-				// start oscillators and lfo
-				const now = ctx.currentTime;
-				oscA.start(now);
-				oscB.start(now);
-				lfo.start(now);
-
-				// store references for later (if needed)
-				return { ctx, masterGain, oscA, oscB, lfo, filter, panner };
-			}
-
-			// Smooth fade helpers
-			function fadeTo(value, time = 0.6){
-				if(!masterGain) return;
-				const t = ctx.currentTime;
-				masterGain.gain.cancelScheduledValues(t);
-				masterGain.gain.setValueAtTime(masterGain.gain.value, t);
-				masterGain.gain.linearRampToValueAtTime(value, t + time);
-			}
-
-			// Attempt to 'autoplay' by creating the graph and leaving it muted.
-			try {
-				createAudioGraph();
-			} catch (e){
-				// If the browser blocks creating AudioContext, we'll still initialize later on first gesture
-				ctx = null;
-			}
-
-			// Enable sound on user gesture: resume context and fade in
-			function enableSound(){
-				if(playing) return;
-				if(!ctx) createAudioGraph();
-				// resume AudioContext if suspended
-				if (ctx && ctx.state === 'suspended') {
-					ctx.resume().catch(()=>{ /* ignore */ });
-				}
-				// small fade in
-				fadeTo(0.12, 0.9);
-				playing = true;
-				unlocked = true;
-				updateButton();
-			}
-
-			// Toggle mute/unmute after unlocked
-			function toggleSound(){
-				if(!ctx) createAudioGraph();
-				if(!unlocked){
-					enableSound();
-					return;
-				}
-				if(playing){
-					// fade out
-					fadeTo(0.0, 0.6);
-					playing = false;
-				} else {
-					fadeTo(0.12, 0.5);
-					playing = true;
-				}
-				updateButton();
-			}
-
-			function updateButton(){
-				if(!btn) return;
-				btn.setAttribute('aria-pressed', String(playing));
-				// swap icon
-				if(playing){
-					btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9H5z" fill="currentColor"/><path d="M16 8a4 4 0 010 8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>';
-				} else {
-					btn.innerHTML = '<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 9v6h4l5 4V5L9 9H5z" fill="currentColor"/><path d="M18 6L6 18" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/></svg>';
-				}
-			}
-
-			// Try to resume right away (may remain suspended in Chromium)
-			if (ctx) {
-				ctx.resume().then(()=>{
-					// keep muted (gain=0) to satisfy autoplay restrictions
-				}).catch(()=>{/* suppressed */});
-			}
-
-			// First gesture unlock: clicking anywhere will enable sound (workaround)
-			function onFirstGesture(){
-				if(unlocked) return;
-				enableSound();
-				// remove these listeners after first unlock
-				['pointerdown','keydown','touchstart'].forEach(ev => window.removeEventListener(ev, onFirstGesture, {passive:true}));
-			}
-			['pointerdown','keydown','touchstart'].forEach(ev => window.addEventListener(ev, onFirstGesture, {passive:true}));
-
-			// Button click toggles sound (if never unlocked, it unlocks)
-			btn.addEventListener('click', function(e){
-				toggleSound();
-			}, false);
-
-			// initial button icon state
-			updateButton();
-
-			// keep behavior graceful on page unload
-			window.addEventListener('pagehide', () => {
-				if(ctx && ctx.close) ctx.close().catch(()=>{});
-			});
-		})();
-	</script>
 </body>
 </html>
